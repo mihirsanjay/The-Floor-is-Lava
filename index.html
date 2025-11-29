@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Floor is LAVA! - Advanced Pathfinding Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-bg: #0a0a0a;
+  --secondary-bg: #1a1a1a;
+  --accent-bg: #2a2a2a;
+  --primary-color: #ff6b35;
+  --secondary-color: #00d4ff;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+.app-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  grid-template-rows: auto 1fr auto;
+  gap: 15px;
+  min-height: 100vh;
+}
+
+.app-header {
+  grid-column: 1 / -1;
+  text-align: center;
+  background: linear-gradient(135deg, var(--primary-color), #ff4500);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-heavy);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%) rotate(45deg); }
+  50% { transform: translateX(100%) rotate(45deg); }
+}
+
+.app-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.7);
+  letter-spacing: 2px;
+  z-index: 1;
+  position: relative;
+}
+
+.app-subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin-top: 10px;
+  font-weight: 300;
+  z-index: 1;
+  position: relative;
+}
+
+.control-panel {
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: var(--shadow-light);
+  backdrop-filter: blur(10px);
+}
+
+.panel-header {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  text-align: center;
+  color: var(--secondary-color);
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.control-section {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: var(--accent-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.control-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.btn {
+  background: linear-gradient(135deg, var(--success-color), #20c997);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger-color), #e74c3c);
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.btn-danger:hover {
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--secondary-color);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.slider-value {
+  font-weight: 600;
+  color: var(--secondary-color);
+  min-width: 70px;
+  text-align: right;
+  font-family: 'Orbitron', monospace;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
+}
+
+.checkbox-group:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--secondary-color);
+}
+
+.game-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#gridCanvas {
+  border: 4px solid var(--secondary-color);
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(0, 212, 255, 0.3), var(--shadow-heavy);
+  background: #ffffff;
+  max-width: 100%;
+  height: auto;
+}
+
+.algorithm-comparison {
+  margin-top: 20px;
+  padding: 20px;
+  background: var(--accent-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  display: none;
+}
+
+.comparison-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  text-align: center;
+  color: var(--secondary-color);
+}
+
+.algorithm-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--secondary-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.legend-name {
+  font-weight: 600;
+  font-family: 'Orbitron', monospace;
+}
+
+.legend-description {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.stats-panel {
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-light);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 15px;
+  background: var(--accent-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 900;
+  font-family: 'Orbitron', monospace;
+  color: var(--secondary-color);
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.agent-tracking {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.agent-list {
+  padding: 15px;
+  border-radius: 10px;
+  display: none;
+}
+
+.escaped-agents {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.15), rgba(32, 201, 151, 0.15));
+  border: 2px solid rgba(40, 167, 69, 0.4);
+}
+
+.dead-agents {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.15), rgba(231, 76, 60, 0.15));
+  border: 2px solid rgba(220, 53, 69, 0.4);
+}
+
+.list-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-tag {
+  display: inline-block;
+  margin: 3px;
+  padding: 6px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.escaped-tag {
+  background: rgba(40, 167, 69, 0.8);
+  color: white;
+}
+
+.dead-tag {
+  background: rgba(220, 53, 69, 0.8);
+  color: white;
+}
+
+.instruction-panel {
+  padding: 15px;
+  background: var(--accent-bg);
+  border-radius: 10px;
+  border-left: 4px solid var(--primary-color);
+  text-align: center;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1400px) {
+  .app-container {
+    max-width: 100%;
+    grid-template-columns: 260px 1fr 260px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .app-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 15px;
+    padding: 10px;
+  }
+  
+  .control-panel {
+    order: 2;
+  }
+  
+  .game-area {
+    order: 1;
+  }
+  
+  .stats-panel {
+    order: 3;
+  }
+}
+
+@media (max-width: 1000px) {
+  #gridCanvas {
+    width: min(500px, 90vw);
+    height: min(500px, 90vw);
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+  }
+  
+  #gridCanvas {
+    width: min(400px, 85vw);
+    height: min(400px, 85vw);
+  }
+  
+  .algorithm-legend {
+    grid-template-columns: 1fr;
+  }
+  
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .button-group {
+    justify-content: center;
+  }
+  
+  .app-title {
+    font-size: 2rem;
+  }
+}
+
+.glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+  to { box-shadow: 0 0 30px rgba(0, 212, 255, 0.6); }
+}
+</style>
+
+<div class="app-container">
+  <!-- Header -->
+  <div class="app-header">
+    <h1 class="app-title">🌋 FLOOR IS LAVA! 🔥</h1>
+    <p class="app-subtitle">Advanced Pathfinding Evacuation Simulator</p>
+  </div>
+
+  <!-- Left Control Panel -->
+  <div class="control-panel">
+    <h2 class="panel-header"><i class="fas fa-cogs"></i> Algorithm Control</h2>
+    
+    <div class="control-section">
+      <label class="control-label" for="algorithm">
+        <i class="fas fa-brain"></i> Pathfinding Algorithm
+      </label>
+      <select id="algorithm" class="form-control">
+        <option value="astar">A* (Optimal Heuristic)</option>
+        <option value="bfs">BFS (Shortest Path)</option>
+        <option value="dijkstra">Dijkstra (Weighted)</option>
+        <option value="dfs">DFS (Deep Search)</option>
+      </select>
+    </div>
+
+    <div class="control-section">
+      <label class="checkbox-group">
+        <input type="checkbox" id="compareMode" class="checkbox">
+        <span><i class="fas fa-balance-scale"></i> Compare All Algorithms</span>
+      </label>
+      <label class="checkbox-group">
+        <input type="checkbox" id="showPaths" checked class="checkbox">
+        <span><i class="fas fa-route"></i> Show Path Traces</span>
+      </label>
+    </div>
+
+    <div class="control-section">
+      <div class="button-group">
+        <button id="startSimulation" class="btn">
+          <i class="fas fa-play"></i> Start Simulation
+        </button>
+        <button id="stopSimulation" class="btn btn-danger" disabled>
+          <i class="fas fa-stop"></i> Stop
+        </button>
+        <button id="resetBtn" class="btn">
+          <i class="fas fa-sync-alt"></i> Reset
+        </button>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <label class="checkbox-group">
+        <input type="checkbox" id="fixWalls" class="checkbox">
+        <span><i class="fas fa-lock"></i> Preserve Walls on Reset</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Game Canvas Area -->
+  <div class="game-area">
+    <canvas id="gridCanvas" width="600" height="600"></canvas>
+    
+    <div id="algorithmComparison" class="algorithm-comparison">
+      <div class="comparison-title">
+        <i class="fas fa-chart-line"></i> Algorithm Comparison Legend
+      </div>
+      <div class="algorithm-legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #FFD700;"></div>
+          <div>
+            <div class="legend-name">A* Algorithm</div>
+            <div class="legend-description">Optimal with heuristics</div>
+          </div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #00CED1;"></div>
+          <div>
+            <div class="legend-name">BFS Algorithm</div>
+            <div class="legend-description">Guaranteed shortest path</div>
+          </div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #32CD32;"></div>
+          <div>
+            <div class="legend-name">Dijkstra</div>
+            <div class="legend-description">Weighted pathfinding</div>
+          </div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #FF6347;"></div>
+          <div>
+            <div class="legend-name">DFS Algorithm</div>
+            <div class="legend-description">Deep exploration</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="instruction-panel">
+      <div id="instructions">
+        <i class="fas fa-info-circle"></i>
+        <strong>Controls:</strong> Left-click: Walls | Right-click: Exits | Shift+Click: Fire | Drag agents in manual mode
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Control Panel -->
+  <div class="control-panel">
+    <h2 class="panel-header"><i class="fas fa-sliders-h"></i> Simulation Settings</h2>
+    
+    <div class="control-section">
+      <label class="control-label" for="agentCount">
+        <i class="fas fa-users"></i> Agent Count (1-100)
+      </label>
+      <input type="number" id="agentCount" value="10" min="1" max="100" class="form-control">
+    </div>
+
+    <div class="control-section">
+      <label class="control-label" for="agentMode">
+        <i class="fas fa-crosshairs"></i> Agent Placement
+      </label>
+      <select id="agentMode" class="form-control">
+        <option value="random">🎲 Random Spawn</option>
+        <option value="manual">🎯 Manual Positioning</option>
+      </select>
+      <div id="agentInstruction" class="instruction-panel" style="margin-top: 10px;">
+        <i class="fas fa-dice"></i> Agents spawn randomly
+      </div>
+    </div>
+
+    <div class="control-section">
+      <label class="control-label" for="speedControl">
+        <i class="fas fa-tachometer-alt"></i> Speed
+      </label>
+      <div class="slider-group">
+        <input type="range" id="speedControl" min="50" max="500" value="100" class="slider">
+        <span id="speedValue" class="slider-value">100ms</span>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <label class="control-label" for="fireSpeedControl">
+        <i class="fas fa-fire"></i> Fire Spread Speed
+      </label>
+      <div class="slider-group">
+        <input type="range" id="fireSpeedControl" min="500" max="3000" value="1500" class="slider">
+        <span id="fireSpeedValue" class="slider-value">1500ms</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Panel -->
+  <div class="stats-panel">
+    <h2 class="panel-header"><i class="fas fa-chart-bar"></i> Simulation Statistics</h2>
+    
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value" id="statAlgorithm">-</div>
+        <div class="stat-label">Algorithm</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statTotal">-</div>
+        <div class="stat-label">Total Agents</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statSurvivors">-</div>
+        <div class="stat-label">Survivors</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statDead">-</div>
+        <div class="stat-label">Casualties</div>
+      </div>
+    </div>
+
+    <div class="agent-tracking">
+      <div id="escapedAgents" class="agent-list escaped-agents">
+        <div class="list-title">
+          <i class="fas fa-check-circle"></i> Escaped Agents
+        </div>
+        <div id="escapedList"></div>
+      </div>
+
+      <div id="deadAgents" class="agent-list dead-agents">
+        <div class="list-title">
+          <i class="fas fa-skull"></i> Lost Agents
+        </div>
+        <div id="deadList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+
+<script>
+// Enhanced UI interactions
+document.getElementById('compareMode').addEventListener('change', function() {
+  const comparisonPanel = document.getElementById('algorithmComparison');
+  const algorithmSelect = document.getElementById('algorithm');
+  
+  if (this.checked) {
+    comparisonPanel.style.display = 'block';
+    algorithmSelect.disabled = true;
+    comparisonPanel.classList.add('glow');
+  } else {
+    comparisonPanel.style.display = 'none';
+    algorithmSelect.disabled = false;
+    comparisonPanel.classList.remove('glow');
+  }
+});
+
+// Update instructions based on agent mode
+document.getElementById('agentMode').addEventListener('change', function() {
+  const instruction = document.getElementById('agentInstruction');
+  const instructionText = this.value === 'manual' 
+    ? '<i class="fas fa-hand-pointer"></i> Drag agents to reposition them'
+    : '<i class="fas fa-dice"></i> Agents spawn randomly';
+  instruction.innerHTML = instructionText;
+});
+
+// Add visual feedback for sliders
+document.querySelectorAll('.slider').forEach(slider => {
+  slider.addEventListener('input', function() {
+    const percentage = (this.value - this.min) / (this.max - this.min) * 100;
+    this.style.background = `linear-gradient(to right, var(--secondary-color) 0%, var(--secondary-color) ${percentage}%, rgba(255,255,255,0.1) ${percentage}%, rgba(255,255,255,0.1) 100%)`;
+  });
+  
+  // Initialize slider styling
+  const percentage = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+  slider.style.background = `linear-gradient(to right, var(--secondary-color) 0%, var(--secondary-color) ${percentage}%, rgba(255,255,255,0.1) ${percentage}%, rgba(255,255,255,0.1) 100%)`;
+});
+</script>
+
+</body>
+</html>
