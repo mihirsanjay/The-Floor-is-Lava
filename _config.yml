@@ -1,0 +1,3 @@
+theme: jekyll-theme-minimal
+title: "Floor is LAVA! - Advanced Pathfinding Simulator"
+description: "Interactive evacuation simulator demonstrating A*, BFS, Dijkstra, and DFS algorithms"
